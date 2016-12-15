@@ -69,15 +69,15 @@ def close_db(error):
 
 
 @app.route('/')
-def show_entries():
+def show_files():
     db = get_db()
-    cur = db.execute('select title from entries order by title asc')
+    cur = db.execute('select filename from files order by filename asc')
     entryNames = []
     while True:
         row = cur.fetchone()
         if row is None:
             break
-        entryNames.append(row["title"])
+        entryNames.append(row["filename"])
     return str(entryNames)
 
 
@@ -86,12 +86,12 @@ def add_entry():
     # if not session.get('logged_in'):
     #     abort(401)
     db = get_db()
-    db.execute('delete from entries where title = ?', [request.form['filename']])
-    db.execute('insert into entries (title, text) values (?, ?)',
+    db.execute('delete from files where filename = ?', [request.form['filename']])
+    db.execute('insert into files (filename, body) values (?, ?)',
                [request.form['filename'], request.form['file']])
     db.commit()
     flash('New entry was successfully posted')
-    return redirect(url_for('show_entries'))
+    return redirect(url_for('show_files'))
 
 
 @app.route('/get', methods=['POST'])
@@ -99,11 +99,11 @@ def get_entry():
     # if not session.get('logged_in'):
     #     abort(401)
     db = get_db()
-    cur = db.execute('select text from entries where title = ?', [request.form['filename']])
+    cur = db.execute('select body from files where filename = ?', [request.form['filename']])
     row = cur.fetchone()
     if row is None:
         return "Invalid name"
-    return str(row["text"])
+    return str(row["body"])
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -117,7 +117,7 @@ def login():
         else:
             session['logged_in'] = True
             flash('You were logged in')
-            return redirect(url_for('show_entries'))
+            return redirect(url_for('show_files'))
     return error
 
 
@@ -125,4 +125,4 @@ def login():
 def logout():
     session.pop('logged_in', None)
     flash('You were logged out')
-    return redirect(url_for('show_entries'))
+    return redirect(url_for('show_files'))
