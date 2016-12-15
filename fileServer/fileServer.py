@@ -86,6 +86,7 @@ def add_entry():
     # if not session.get('logged_in'):
     #     abort(401)
     db = get_db()
+    db.execute('delete from entries where title = ?', [request.form['filename']])
     db.execute('insert into entries (title, text) values (?, ?)',
                [request.form['filename'], request.form['file']])
     db.commit()

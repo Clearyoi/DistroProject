@@ -1,5 +1,8 @@
 import requests
 
+directoryServerUrl = 'http://localhost:5000/'
+authServerUrl = 'http://localhost:5000/'
+
 
 def evaluate(command):
     args = command.split(' ')
@@ -7,7 +10,7 @@ def evaluate(command):
         if len(args) != 3:
             print 'login takes 2 arguments\nlogin $username $pword'
         else:
-            r = requests.post('http://localhost:5000/login', data={'username': args[1], 'password': args[2]})
+            r = requests.post((authServerUrl + 'login'), data={'username': args[1], 'password': args[2]})
             print r.text
     elif args[0] == 'add':
         if len(args) != 2:
@@ -15,8 +18,7 @@ def evaluate(command):
         else:
             path = 'files/' + args[1]
             f = open(path)
-            r = requests.post('http://localhost:5000/add', data={'filename': args[1], 'file': f.read()})
-            # r = requests.post('http://posttestserver.com/post.php', data={'filename': args[1], 'file': f.read()})
+            r = requests.post((directoryServerUrl + 'add'), data={'filename': args[1], 'file': f.read()})
             print r.text
     elif args[0] == 'list':
         if len(args) != 1:
