@@ -71,9 +71,14 @@ def close_db(error):
 @app.route('/')
 def show_entries():
     db = get_db()
-    cur = db.execute('select title, text from entries order by id desc')
-    entryNames = cur.fetchone()
-    return entryNames["title"]
+    cur = db.execute('select title from entries order by title asc')
+    entryNames = []
+    while True:
+        row = cur.fetchone()
+        if row is None:
+            break
+        entryNames.append(row["title"])
+    return str(entryNames)
 
 
 @app.route('/add', methods=['POST'])

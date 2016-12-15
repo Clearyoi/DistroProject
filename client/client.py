@@ -11,12 +11,18 @@ def evaluate(command):
             print r.text
     elif args[0] == 'add':
         if len(args) != 2:
-            print 'login takes 1 argument\nadd $filename'
+            print 'add takes 1 argument\nadd $filename'
         else:
             path = 'files/' + args[1]
             f = open(path)
             r = requests.post('http://localhost:5000/add', data={'filename': args[1], 'file': f.read()})
             # r = requests.post('http://posttestserver.com/post.php', data={'filename': args[1], 'file': f.read()})
+            print r.text
+    elif args[0] == 'list':
+        if len(args) != 1:
+            print 'list takes no arguments'
+        else:
+            r = requests.get('http://localhost:5000/')
             print r.text
     else:
         print 'invalid command ' + args[0]
