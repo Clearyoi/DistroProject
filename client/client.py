@@ -24,6 +24,18 @@ def evaluate(command):
         else:
             r = requests.get('http://localhost:5000/')
             print r.text
+    elif args[0] == 'get':
+        if len(args) != 2:
+            print 'get takes 1 argument\nget $filename'
+        else:
+            r = requests.post('http://localhost:5000/get', data={'filename': args[1]})
+            if r.text == 'Invalid name':
+                print 'Invalid name'
+            else:
+                path = 'files/' + args[1]
+                f = open(path, 'w')
+                f.write(r.text)
+                print 'file downloaded'
     else:
         print 'invalid command ' + args[0]
 

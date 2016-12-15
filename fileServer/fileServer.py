@@ -93,6 +93,18 @@ def add_entry():
     return redirect(url_for('show_entries'))
 
 
+@app.route('/get', methods=['POST'])
+def get_entry():
+    # if not session.get('logged_in'):
+    #     abort(401)
+    db = get_db()
+    cur = db.execute('select text from entries where title = ?', [request.form['filename']])
+    row = cur.fetchone()
+    if row is None:
+        return "Invalid name"
+    return str(row["text"])
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
