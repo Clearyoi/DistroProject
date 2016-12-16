@@ -1,7 +1,7 @@
 import requests
 
-directoryServerUrl = 'http://localhost:5000/'
-authServerUrl = 'http://localhost:5000/'
+directoryServerUrl = 'http://localhost:3000/'
+authServerUrl = 'http://localhost:4000/'
 
 
 def evaluate(command):
@@ -24,13 +24,13 @@ def evaluate(command):
         if len(args) != 1:
             print 'list takes no arguments'
         else:
-            r = requests.get('http://localhost:5000/')
+            r = requests.get(directoryServerUrl)
             print r.text
     elif args[0] == 'get':
         if len(args) != 2:
             print 'get takes 1 argument\nget $filename'
         else:
-            r = requests.post('http://localhost:5000/get', data={'filename': args[1]})
+            r = requests.post((directoryServerUrl + 'get'), data={'filename': args[1]})
             if r.text == 'Invalid name':
                 print 'Invalid name'
             else:
