@@ -22,6 +22,7 @@ app = Flask(__name__)
 # Load default config and override config from an environment variable
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'authServer.db'),
+    SECRET_KEY='ServerKEY',
     DEBUG=True,
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
@@ -65,17 +66,17 @@ def close_db(error):
         g.sqlite_db.close()
 
 
-# @app.route('/')
-# def show_files():
-#     db = get_db()
-#     cur = db.execute('select filename from files order by filename asc')
-#     entryNames = []
-#     while True:
-#         row = cur.fetchone()
-#         if row is None:
-#             break
-#         entryNames.append(row["filename"])
-#     return str(entryNames)
+@app.route('/')
+def show_users():
+    db = get_db()
+    cur = db.execute('select username from users order by username asc')
+    entryNames = []
+    while True:
+        row = cur.fetchone()
+        if row is None:
+            break
+        entryNames.append(row["username"])
+    return str(entryNames)
 
 
 @app.route('/login', methods=['POST'])
@@ -91,6 +92,19 @@ def login():
     else:
         return 'logged in'
     return error
+
+
+@app.route('/addUser', methods=['POST'])
+def addUser():
+    db = get_db()
+    cur = db.execute('select * from users where username = ?', [request.form['username']])
+    row = cur.fetchone()
+    if row is None:
+        db.execute('insert into users (level, username, password) values (?, ?, ?)',
+                   [request.form['level'], request.form['username'], request.form['password']])
+        return 'user added'
+    else:
+        return 'username already exists'
 
 
 @app.route('/logout')

@@ -23,7 +23,7 @@ app = Flask(__name__)
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'fileServer.db'),
     DEBUG=True,
-    SECRET_KEY='development key',
+    SECRET_KEY='ServerKEY',
     USERNAME='admin',
     PASSWORD='default'
 ))
