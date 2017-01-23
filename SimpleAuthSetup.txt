@@ -1,0 +1,24 @@
+Step 1
+	send username pword
+Step 2
+	auth checks is good
+	return token to client containing
+		Encrypted by Key B(Known to Auth Server and file Server)
+			Key A (Newly generated)
+			metadata
+				time the token is valid
+				what services are available
+		Plain text
+			Key A
+Step 3
+	Client sends message to File Server
+		Encrypted with Key A
+			message
+		Encrypted with Key B
+			token recieved
+Step 4
+	File Server dycrypts token
+	Has Key A now, Can read message, Also has metadata of permissions
+
+
+	Use Ceasar encryption
