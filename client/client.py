@@ -14,10 +14,10 @@ def login(args):
 
 def addUser(args):
     if len(args) != 4:
-        print 'addUser takes 3 arguments\naddUser $ level $username $pword'
+        print 'addUser takes 3 arguments\naddUser $username $pword $level'
     else:
-        r = requests.post((authServerUrl + 'addUser'), data={'level': args[1], 'username': args[2],
-                          'password': args[3]})
+        r = requests.post((authServerUrl + 'addUser'), data={'username': args[1], 'password': args[2],
+                          'level': args[3]})
         print r.text
 
 

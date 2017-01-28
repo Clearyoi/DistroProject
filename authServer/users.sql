@@ -4,4 +4,4 @@ create table users (
   password text not null,
   level text not null
 );
-insert into users values ("admin", "password", "admin")
+insert into users values ("admin", "password", "admin");

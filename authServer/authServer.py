@@ -85,11 +85,13 @@ def login():
 @app.route('/addUser', methods=['POST'])
 def addUser():
     db = get_db()
-    cur = db.execute('select * from users where username = ?', [request.form['username']])
+    cur = db.execute('select username from users where username = ?', [request.form['username']])
     row = cur.fetchone()
     if row is None:
-        db.execute('insert into users (level, username, password) values (?, ?, ?)',
-                   [request.form['level'], request.form['username'], request.form['password']])
+        print request.form['level'] + request.form['username'] + request.form['password']
+        db.execute('insert into users (username, password, level) values (?, ?, ?)',
+                   [request.form['username'], request.form['password'], request.form['level']])
+        db.commit()
         return 'user added'
     else:
         return 'username already exists'
