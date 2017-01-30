@@ -4,7 +4,6 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 
 
-# create our little application :)
 app = Flask(__name__)
 
 # Load default config and override config from an environment variable
@@ -28,7 +27,7 @@ def connect_db():
 def init_db():
     """Initializes the database."""
     db = get_db()
-    with app.open_resource('schema.sql', mode='r') as f:
+    with app.open_resource('files.sql', mode='r') as f:
         db.cursor().executescript(f.read())
     db.commit()
 
@@ -75,7 +74,7 @@ def add_entry():
     #     abort(401)
     db = get_db()
     db.execute('delete from files where filename = ?', [request.form['filename']])
-    db.execute('insert into files (filename, body) values (?, ?)',
+    db.execute('insert into files (filename, body, version, lock) values (?, ?, 0, 0)',
                [request.form['filename'], request.form['file']])
     db.commit()
     flash('New entry was successfully posted')
