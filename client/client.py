@@ -1,4 +1,5 @@
 import requests
+from Crypto.Cipher import AES
 
 directoryServerUrl = 'http://localhost:3000/'
 authServerUrl = 'http://localhost:4000/'
@@ -61,6 +62,13 @@ def getFile(args):
             print 'file downloaded'
 
 
+def test(args):
+    encryption_suite = AES.new('This is a key123', AES.MODE_CFB, 'This is an IV456')
+    token = encryption_suite.encrypt(args[1])
+    r = requests.post((authServerUrl + 'test'), data={'test': token})
+    print r.text
+
+
 def evaluate(command):
     args = command.split(' ')
     if args[0] == 'login':
@@ -75,6 +83,8 @@ def evaluate(command):
         listUsers(args)
     elif args[0] == 'get':
         getFile(args)
+    elif args[0] == 'test':
+        test(args)
     else:
         print 'invalid command ' + args[0]
 

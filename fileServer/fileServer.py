@@ -68,6 +68,11 @@ def show_files():
     return str(entryNames)
 
 
+@app.route('/setKey')
+def set_key():
+    return "success"
+
+
 @app.route('/add', methods=['POST'])
 def add_entry():
     # if not session.get('logged_in'):
