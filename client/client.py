@@ -1,5 +1,5 @@
 import requests
-from Crypto.Cipher import AES
+import Cipher as C
 
 directoryServerUrl = 'http://localhost:3000/'
 authServerUrl = 'http://localhost:4000/'
@@ -63,8 +63,8 @@ def getFile(args):
 
 
 def test(args):
-    encryption_suite = AES.new('This is a key123', AES.MODE_CFB, 'This is an IV456')
-    token = encryption_suite.encrypt(args[1])
+    token = C.encrypt(args[1], 3)
+    print token
     r = requests.post((authServerUrl + 'test'), data={'test': token})
     print r.text
 

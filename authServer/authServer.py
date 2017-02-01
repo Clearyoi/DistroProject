@@ -1,8 +1,8 @@
 import os
+import Cipher as C
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
-from Crypto.Cipher import AES
 
 directoryServerUrl = 'http://localhost:3000/'
 
@@ -73,9 +73,8 @@ def show_users():
 @app.route('/test', methods=['POST'])
 def test():
     token = request.form['test']
-    decryption_suite = AES.new('This is a key123', AES.MODE_CFB, 'This is an IV456')
-    plain_text = decryption_suite.decrypt(token)
-    return str(plain_text)
+    plain_text = C.decrypt(token, 3)
+    return plain_text
 
 
 @app.route('/login', methods=['POST'])
