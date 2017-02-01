@@ -1,10 +1,12 @@
 import os
+import Cipher as C
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash
 
 
 app = Flask(__name__)
+knownServerKey = 12
 
 # Load default config and override config from an environment variable
 app.config.update(dict(

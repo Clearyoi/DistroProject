@@ -1,10 +1,12 @@
 import os
+import random
 import Cipher as C
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash
+     render_template, flash, jsonify
 
 directoryServerUrl = 'http://localhost:3000/'
+knownServerKey = 12
 
 
 # create our little application :)
@@ -50,6 +52,16 @@ def get_db():
     return g.sqlite_db
 
 
+def generateLoginResponse():
+    newKey = random.randint(1, 26)
+    responce = {'key': newKey}
+    token = {}
+    token['key'] = C.encrypt(str(newKey), knownServerKey)
+    token['level'] = C.encrypt(str(2), knownServerKey)
+    responce['token'] = token
+    return responce
+
+
 @app.teardown_appcontext
 def close_db(error):
     """Closes the database again at the end of the request."""
@@ -70,26 +82,18 @@ def show_users():
     return str(entryNames)
 
 
-@app.route('/test', methods=['POST'])
-def test():
-    token = request.form['test']
-    plain_text = C.decrypt(token, 3)
-    return plain_text
-
-
 @app.route('/login', methods=['POST'])
 def login():
     db = get_db()
-    error = None
+    error = 'Invalid username or password'
     cur = db.execute('select * from users where username = ?', [request.form['username']])
     row = cur.fetchone()
     if row is None:
-        error = 'Invalid username'
+        return error
     elif request.form['password'] != row["password"]:
-        error = 'Invalid password'
+        return error
     else:
-        return 'logged in'
-    return error
+        return jsonify(generateLoginResponse())
 
 
 @app.route('/addUser', methods=['POST'])
