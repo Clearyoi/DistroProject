@@ -21,9 +21,9 @@ class Client(object):
             if r.text == 'Invalid username or password':
                 print r.text
             else:
-                info = r.json()
-                self.key = info['key']
-                self.token = info['token']
+                info = json.loads(r.text)
+                self.key = info["key"]
+                self.token = info["token"]
                 self.loggedIn = True
                 print 'logged in as \"' + args[1] + '\"'
 

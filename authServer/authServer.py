@@ -3,7 +3,7 @@ import random
 import Cipher as C
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash, jsonify
+     render_template, flash, jsonify, json
 
 directoryServerUrl = 'http://localhost:3000/'
 knownServerKey = 12
@@ -17,6 +17,7 @@ app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'authServer.db'),
     SECRET_KEY='ServerKEY',
     DEBUG=True,
+    JSON_AS_ASCII=True
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
@@ -52,14 +53,13 @@ def get_db():
     return g.sqlite_db
 
 
-def generateLoginResponse():
+def generateLoginResponse(level):
     newKey = random.randint(1, 26)
-    responce = {'key': newKey}
-    token = {}
-    token['key'] = C.encrypt(str(newKey), knownServerKey)
-    token['level'] = C.encrypt(str(2), knownServerKey)
-    responce['token'] = token
-    return responce
+    responce = {"key": newKey}
+    token = {"key": newKey, "level": level}
+    jsonStr = json.dumps(token, ensure_ascii=True)
+    responce["token"] = C.encrypt(jsonStr, knownServerKey)
+    return json.dumps(responce, ensure_ascii=True)
 
 
 @app.teardown_appcontext
@@ -93,7 +93,7 @@ def login():
     elif request.form['password'] != row["password"]:
         return error
     else:
-        return jsonify(generateLoginResponse())
+        return generateLoginResponse(row["level"])
 
 
 @app.route('/addUser', methods=['POST'])
