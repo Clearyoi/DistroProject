@@ -12,6 +12,7 @@ class Client(object):
         self.loggedIn = False
         self.key = 0
         self.token = ''
+        self.cache = {}
 
     def login(self, args):
         if len(args) != 3:
@@ -36,14 +37,24 @@ class Client(object):
             print r.text
 
     def addFile(self, args):
-        if len(args) != 2:
-            print 'add takes 1 argument\nadd $filename'
+        if len(args) != 3:
+            print 'add takes 2 arguments\nadd $filename $fileLevel'
         else:
-            path = 'files/' + args[1]
-            f = open(path)
-            r = requests.post((directoryServerUrl + 'add'), data={'token': self.token,
-                              'filename': C.encrypt(args[1], self.key), 'file': C.encrypt(f.read(), self.key)})
-            print r.text
+            filename = args[1]
+            path = 'files/' + filename
+            try:
+                f = open(path)
+                r = requests.post((directoryServerUrl + 'add'), data={'token': self.token,
+                                  'filename': C.encrypt(filename, self.key), 'file': C.encrypt(f.read(), self.key),
+                                  'fileLevel': C.encrypt(args[2], self.key)})
+                if r.text == "You don't have permission to overwrite this file" or r.text.startswith("This file is locked by "):
+                    print r.text
+                else:
+                    info = json.loads(r.text)
+                    print info["text"]
+                    self.cache[filename] = info["version"]
+            except IOError:
+                print "File not found"
 
     def listFiles(self, args):
         if len(args) != 1:
@@ -63,14 +74,35 @@ class Client(object):
         if len(args) != 2:
             print 'get takes 1 argument\nget $filename'
         else:
-            r = requests.post((directoryServerUrl + 'get'), data={'token': self.token, 'filename': C.encrypt(args[1], self.key)})
-            if r.text == 'Invalid name':
-                print 'Invalid name'
+            filename = args[1]
+            version = -1
+            if filename in self.cache:
+                version = self.cache[filename]
+            r = requests.post((directoryServerUrl + 'get'), data={'token': self.token, 'filename': C.encrypt(args[1], self.key),
+                              'curVersion': C.encrypt(str(version), self.key)})
+            if r.text == 'File does not exist or you do not have permission to view it' or r.text == 'Copy up to date':
+                print r.text
             else:
-                path = 'files/' + args[1]
+                info = json.loads(r.text)
+                path = 'files/' + filename
                 f = open(path, 'w')
-                f.write(r.text)
+                f.write(info["body"])
+                self.cache[filename] = info["version"]
                 print 'file downloaded'
+
+    def lock(self, args):
+        if len(args) != 2:
+            print 'lock takes 1 argument\nget $filename'
+        else:
+            r = requests.post((directoryServerUrl + 'lock'), data={'token': self.token, 'filename': C.encrypt(args[1], self.key)})
+            print r.text
+
+    def unlock(self, args):
+        if len(args) != 2:
+            print 'unlock takes 1 argument\nget $filename'
+        else:
+            r = requests.post((directoryServerUrl + 'unlock'), data={'token': self.token, 'filename': C.encrypt(args[1], self.key)})
+            print r.text
 
     def evaluate(self, command):
         args = command.split(' ')
@@ -88,6 +120,10 @@ class Client(object):
             self.listUsers(args)
         elif args[0] == 'get':
             self.getFile(args)
+        elif args[0] == 'lock':
+            self.lock(args)
+        elif args[0] == 'unlock':
+            self.unlock(args)
         else:
             print 'invalid command ' + args[0]
 

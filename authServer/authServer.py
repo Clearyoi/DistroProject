@@ -53,10 +53,10 @@ def get_db():
     return g.sqlite_db
 
 
-def generateLoginResponse(level):
+def generateLoginResponse(level, username):
     newKey = random.randint(1, 26)
     responce = {"key": newKey}
-    token = {"key": newKey, "level": level}
+    token = {"key": newKey, "level": level, "username": username}
     jsonStr = json.dumps(token, ensure_ascii=True)
     responce["token"] = C.encrypt(jsonStr, knownServerKey)
     return json.dumps(responce, ensure_ascii=True)
@@ -86,14 +86,15 @@ def show_users():
 def login():
     db = get_db()
     error = 'Invalid username or password'
-    cur = db.execute('select * from users where username = ?', [request.form['username']])
+    username = request.form['username']
+    cur = db.execute('select * from users where username = ?', [username])
     row = cur.fetchone()
     if row is None:
         return error
     elif request.form['password'] != row["password"]:
         return error
     else:
-        return generateLoginResponse(row["level"])
+        return generateLoginResponse(row["level"], username)
 
 
 @app.route('/addUser', methods=['POST'])

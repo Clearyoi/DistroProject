@@ -60,6 +60,11 @@ def getKey(token):
     return info["key"]
 
 
+def getName(token):
+    info = json.loads(C.decrypt(token, knownServerKey))
+    return info["username"]
+
+
 @app.teardown_appcontext
 def close_db(error):
     """Closes the database again at the end of the request."""
@@ -88,28 +93,45 @@ def set_key():
 
 @app.route('/add', methods=['POST'])
 def add_entry():
-    db = get_db()
     level = getLevel(request.form['token'])
-    key = getKey(request.form['token'])
-    version = 0
-    filename = C.decrypt(request.form['filename'], key)
-    cur = db.execute('select * from files where filename = ?', [filename])
-    row = cur.fetchone()
-    if row is not None:
-        if row["level"] < level:
-            return "You don't have permission to overwrite this file"
-        else:
-            version = row["version"] + 1
-            db.execute('delete from files where filename = ?', [filename])
-            db.execute('insert into files (filename, body, version, lock, level) values (?, ?, ?, 0, ?)',
-                       [filename, C.decrypt(request.form['file'], key), version, level])
-            db.commit()
-            return "File added"
+    fileLevel = request.form['fileLevel']
+    if int(level) > int(fileLevel):
+        return "You cannot create a file above your level. Your level is " + str(level)
     else:
-        db.execute('insert into files (filename, body, version, lock, level) values (?, ?, ?, 0, ?)',
-                   [filename, C.decrypt(request.form['file'], key), version, level])
-        db.commit()
-        return "File added"
+        db = get_db()
+        key = getKey(request.form['token'])
+        version = 0
+        name = getName(request.form['token'])
+        filename = C.decrypt(request.form['filename'], key)
+        cur = db.execute('select * from files where filename = ?', [filename])
+        row = cur.fetchone()
+        if row is not None:
+            if row["level"] < level:
+                return "You don't have permission to overwrite this file"
+            elif row["lock"] is not None:
+                if row["lock"] != name:
+                    return "This file is locked by " + str(row["lock"])
+                else:
+                    version = row["version"] + 1
+                    lock = row["lock"]
+                    lockLevel = row["lockLevel"]
+                    db.execute('delete from files where filename = ?', [filename])
+                    db.execute('insert into files (filename, body, version, lock, lockLevel, level) values (?, ?, ?, ?, ?, ?)',
+                               [filename, C.decrypt(request.form['file'], key), version, lock, lockLevel, fileLevel])
+                    db.commit()
+                    return json.dumps({"text": "File overwritten", "version": version}, ensure_ascii=True)
+            else:
+                version = row["version"] + 1
+                db.execute('delete from files where filename = ?', [filename])
+                db.execute('insert into files (filename, body, version, level) values (?, ?, ?, ?)',
+                           [filename, C.decrypt(request.form['file'], key), version, fileLevel])
+                db.commit()
+                return json.dumps({"text": "File overwritten", "version": version}, ensure_ascii=True)
+        else:
+            db.execute('insert into files (filename, body, version, level) values (?, ?, ?, ?)',
+                       [filename, C.decrypt(request.form['file'], key), version, fileLevel])
+            db.commit()
+            return json.dumps({"text": "File added", "version": version}, ensure_ascii=True)
 
 
 @app.route('/get', methods=['POST'])
@@ -117,9 +139,73 @@ def get_entry():
     db = get_db()
     level = getLevel(request.form['token'])
     key = getKey(request.form['token'])
-    cur = db.execute('select body from files where filename = ? and level <= ?',
+    cur = db.execute('select * from files where filename = ? and level >= ?',
                      [C.decrypt(request.form['filename'], key), level])
     row = cur.fetchone()
     if row is None:
-        return "Invalid name"
-    return str(row["body"])
+        return "File does not exist or you do not have permission to view it"
+    elif int(row["version"]) == int(C.decrypt(request.form['curVersion'], key)):
+        return "Copy up to date"
+    else:
+        return json.dumps({"body": row["body"], "version": row["version"]}, ensure_ascii=True)
+
+
+@app.route('/lock', methods=['POST'])
+def lock():
+    db = get_db()
+    level = getLevel(request.form['token'])
+    key = getKey(request.form['token'])
+    name = getName(request.form['token'])
+    filename = C.decrypt(request.form['filename'], key)
+    cur = db.execute('select * from files where filename = ? and level >= ?',
+                     [filename, level])
+    row = cur.fetchone()
+    if row is None:
+        return 'File does not exist or you do not have permission to lock it'
+    elif row["lock"] is None:
+        body = row["body"]
+        version = row["version"]
+        fileLevel = row["level"]
+        db.execute('delete from files where filename = ?', [filename])
+        db.execute('insert into files (filename, body, version, lock, lockLevel, level) values (?, ?, ?, ?, ?, ?)',
+                   [filename, body, version, name, level, fileLevel])
+        db.commit()
+        return "File locked"
+    else:
+        return 'File is already locked by ' + str(row["lock"])
+
+
+@app.route('/unlock', methods=['POST'])
+def unlock():
+    db = get_db()
+    level = getLevel(request.form['token'])
+    key = getKey(request.form['token'])
+    name = getName(request.form['token'])
+    filename = C.decrypt(request.form['filename'], key)
+    cur = db.execute('select * from files where filename = ? and level >= ?',
+                     [filename, level])
+    row = cur.fetchone()
+    if row is None:
+        return 'File does not exist or you do not have permission to view it'
+    elif row["lock"] is None:
+        return "File is not locked"
+    elif row["lock"] == name:
+        body = row["body"]
+        version = row["version"]
+        fileLevel = row["level"]
+        db.execute('delete from files where filename = ?', [filename])
+        db.execute('insert into files (filename, body, version, level) values (?, ?, ?, ?)',
+                   [filename, body, version, fileLevel])
+        db.commit()
+        return "File unlocked"
+    elif row["lockLevel"] > level:
+        body = row["body"]
+        version = row["version"]
+        fileLevel = row["level"]
+        db.execute('delete from files where filename = ?', [filename])
+        db.execute('insert into files (filename, body, version, level) values (?, ?, ?, ?)',
+                   [filename, body, version, fileLevel])
+        db.commit()
+        return "File unlocked"
+    else:
+        return "You don't have per mission to unlock this file"
