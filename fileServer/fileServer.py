@@ -2,7 +2,7 @@ import os
 import Cipher as C
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
-     render_template, flash
+     render_template, flash, json
 
 
 app = Flask(__name__)
@@ -50,6 +50,16 @@ def get_db():
     return g.sqlite_db
 
 
+def getLevel(token):
+    info = json.loads(C.decrypt(token, knownServerKey))
+    return info["level"]
+
+
+def getKey(token):
+    info = json.loads(C.decrypt(token, knownServerKey))
+    return info["key"]
+
+
 @app.teardown_appcontext
 def close_db(error):
     """Closes the database again at the end of the request."""
@@ -57,10 +67,11 @@ def close_db(error):
         g.sqlite_db.close()
 
 
-@app.route('/')
+@app.route('/',  methods=['POST'])
 def show_files():
+    level = getLevel(request.form['token'])
     db = get_db()
-    cur = db.execute('select filename from files order by filename asc')
+    cur = db.execute('select filename from files where level >= ? order by filename asc', [level])
     entryNames = []
     while True:
         row = cur.fetchone()
@@ -77,23 +88,28 @@ def set_key():
 
 @app.route('/add', methods=['POST'])
 def add_entry():
-    # if not session.get('logged_in'):
-    #     abort(401)
     db = get_db()
-    db.execute('delete from files where filename = ?', [request.form['filename']])
-    db.execute('insert into files (filename, body, version, lock) values (?, ?, 0, 0)',
-               [request.form['filename'], request.form['file']])
+    level = getLevel(request.form['token'])
+    key = getKey(request.form['token'])
+    version = 0
+    cur = db.execute('select version from files where filename = ?', [request.form['filename']])
+    row = cur.fetchone()
+    if row is not None:
+        version = row["version"] + 1
+        db.execute('delete from files where filename = ?', [request.form['filename']])
+    db.execute('insert into files (filename, body, version, lock, level) values (?, ?, ?, 0, ?)',
+               [C.decrypt(request.form['filename'], key), C.decrypt(request.form['file'], key), version, level])
     db.commit()
-    flash('New entry was successfully posted')
-    return redirect(url_for('show_files'))
+    return "File added"
 
 
 @app.route('/get', methods=['POST'])
 def get_entry():
-    # if not session.get('logged_in'):
-    #     abort(401)
     db = get_db()
-    cur = db.execute('select body from files where filename = ?', [request.form['filename']])
+    level = getLevel(request.form['token'])
+    key = getKey(request.form['token'])
+    cur = db.execute('select body from files where filename = ? and level <= ?',
+                     [C.decrypt(request.form['filename'], key), level])
     row = cur.fetchone()
     if row is None:
         return "Invalid name"

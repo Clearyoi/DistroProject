@@ -41,14 +41,15 @@ class Client(object):
         else:
             path = 'files/' + args[1]
             f = open(path)
-            r = requests.post((directoryServerUrl + 'add'), data={'filename': args[1], 'file': f.read()})
+            r = requests.post((directoryServerUrl + 'add'), data={'token': self.token,
+                              'filename': C.encrypt(args[1], self.key), 'file': C.encrypt(f.read(), self.key)})
             print r.text
 
     def listFiles(self, args):
         if len(args) != 1:
             print 'list takes no arguments'
         else:
-            r = requests.get(directoryServerUrl)
+            r = requests.post(directoryServerUrl, data={'token': self.token})
             print r.text
 
     def listUsers(self, args):
@@ -62,7 +63,7 @@ class Client(object):
         if len(args) != 2:
             print 'get takes 1 argument\nget $filename'
         else:
-            r = requests.post((directoryServerUrl + 'get'), data={'filename': args[1]})
+            r = requests.post((directoryServerUrl + 'get'), data={'token': self.token, 'filename': C.encrypt(args[1], self.key)})
             if r.text == 'Invalid name':
                 print 'Invalid name'
             else:
