@@ -92,15 +92,24 @@ def add_entry():
     level = getLevel(request.form['token'])
     key = getKey(request.form['token'])
     version = 0
-    cur = db.execute('select version from files where filename = ?', [request.form['filename']])
+    filename = C.decrypt(request.form['filename'], key)
+    cur = db.execute('select * from files where filename = ?', [filename])
     row = cur.fetchone()
     if row is not None:
-        version = row["version"] + 1
-        db.execute('delete from files where filename = ?', [request.form['filename']])
-    db.execute('insert into files (filename, body, version, lock, level) values (?, ?, ?, 0, ?)',
-               [C.decrypt(request.form['filename'], key), C.decrypt(request.form['file'], key), version, level])
-    db.commit()
-    return "File added"
+        if row["level"] < level:
+            return "You don't have permission to overwrite this file"
+        else:
+            version = row["version"] + 1
+            db.execute('delete from files where filename = ?', [filename])
+            db.execute('insert into files (filename, body, version, lock, level) values (?, ?, ?, 0, ?)',
+                       [filename, C.decrypt(request.form['file'], key), version, level])
+            db.commit()
+            return "File added"
+    else:
+        db.execute('insert into files (filename, body, version, lock, level) values (?, ?, ?, 0, ?)',
+                   [filename, C.decrypt(request.form['file'], key), version, level])
+        db.commit()
+        return "File added"
 
 
 @app.route('/get', methods=['POST'])
@@ -114,25 +123,3 @@ def get_entry():
     if row is None:
         return "Invalid name"
     return str(row["body"])
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
-        if request.form['username'] != app.config['USERNAME']:
-            error = 'Invalid username'
-        elif request.form['password'] != app.config['PASSWORD']:
-            error = 'Invalid password'
-        else:
-            session['logged_in'] = True
-            flash('You were logged in')
-            return redirect(url_for('show_files'))
-    return error
-
-
-@app.route('/logout')
-def logout():
-    session.pop('logged_in', None)
-    flash('You were logged out')
-    return redirect(url_for('show_files'))
