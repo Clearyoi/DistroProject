@@ -203,4 +203,4 @@ def unlock():
         db.commit()
         return "File unlocked"
     else:
-        return "You don't have per mission to unlock this file"
+        return "You don't have permission to unlock this file"
