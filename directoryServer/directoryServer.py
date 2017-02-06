@@ -12,9 +12,7 @@ knownServerKey = 12
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'directoryServer.db'),
     DEBUG=True,
-    SECRET_KEY='ServerKEY',
-    USERNAME='admin',
-    PASSWORD='default'
+    SECRET_KEY='ServerKEY'
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
@@ -86,11 +84,6 @@ def show_files():
     return str(entryNames)
 
 
-@app.route('/setKey')
-def set_key():
-    return "success"
-
-
 @app.route('/add', methods=['POST'])
 def add_entry():
     level = getLevel(request.form['token'])
@@ -116,22 +109,25 @@ def add_entry():
                     lock = row["lock"]
                     lockLevel = row["lockLevel"]
                     db.execute('delete from files where filename = ?', [filename])
-                    db.execute('insert into files (filename, body, version, lock, lockLevel, level) values (?, ?, ?, ?, ?, ?)',
-                               [filename, C.decrypt(request.form['file'], key), version, lock, lockLevel, fileLevel])
+                    db.execute('insert into files (filename, version, lock, lockLevel, level) values (?, ?, ?, ?, ?)',
+                               [filename, version, lock, lockLevel, fileLevel])
                     db.commit()
-                    return json.dumps({"text": "File overwritten", "version": version}, ensure_ascii=True)
+                    return json.dumps({"text": "File overwritten", "version": version,
+                                      "fileServerAdr": 'http://localhost:5000/'}, ensure_ascii=True)
             else:
                 version = row["version"] + 1
                 db.execute('delete from files where filename = ?', [filename])
-                db.execute('insert into files (filename, body, version, level) values (?, ?, ?, ?)',
-                           [filename, C.decrypt(request.form['file'], key), version, fileLevel])
+                db.execute('insert into files (filename, version, level) values (?, ?, ?)',
+                           [filename, version, fileLevel])
                 db.commit()
-                return json.dumps({"text": "File overwritten", "version": version}, ensure_ascii=True)
+                return json.dumps({"text": "File overwritten", "version": version,
+                                  "fileServerAdr": 'http://localhost:5000/'}, ensure_ascii=True)
         else:
-            db.execute('insert into files (filename, body, version, level) values (?, ?, ?, ?)',
-                       [filename, C.decrypt(request.form['file'], key), version, fileLevel])
+            db.execute('insert into files (filename, version, level) values (?, ?, ?)',
+                       [filename, version, fileLevel])
             db.commit()
-            return json.dumps({"text": "File added", "version": version}, ensure_ascii=True)
+            return json.dumps({"text": "File added", "version": version,
+                               "fileServerAdr": 'http://localhost:5000/'}, ensure_ascii=True)
 
 
 @app.route('/get', methods=['POST'])
@@ -208,4 +204,4 @@ def unlock():
         db.commit()
         return "File unlocked"
     else:
-        return "You don't have per mission to unlock this file"
+        return "You don't have permission to unlock this file"

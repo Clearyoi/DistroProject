@@ -45,14 +45,19 @@ class Client(object):
             try:
                 f = open(path)
                 r = requests.post((directoryServerUrl + 'add'), data={'token': self.token,
-                                  'filename': C.encrypt(filename, self.key), 'file': C.encrypt(f.read(), self.key),
+                                  'filename': C.encrypt(filename, self.key),
                                   'fileLevel': C.encrypt(args[2], self.key)})
                 if r.text == "You don't have permission to overwrite this file" or r.text.startswith("This file is locked by "):
                     print r.text
                 else:
+                    print r.text
                     info = json.loads(r.text)
                     print info["text"]
                     self.cache[filename] = info["version"]
+                    fileServerUrl = info["fileServerAdr"]
+                    r2 = requests.post((fileServerUrl + 'add'), data={'token': self.token, 'filename': C.encrypt(filename, self.key),
+                                       'file': C.encrypt(f.read(), self.key)})
+                    print r2.text
             except IOError:
                 print "File not found"
 

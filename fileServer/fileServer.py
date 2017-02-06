@@ -1,4 +1,5 @@
 import os
+import errno
 import Cipher as C
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, session, g, redirect, url_for, abort, \
@@ -34,9 +35,27 @@ def getName(token):
 
 @app.route('/add', methods=['POST'])
 def add_entry():
-    return "add pls"
+    key = getKey(request.form['token'])
+    body = C.decrypt(request.form['file'], key)
+    filename = C.decrypt(request.form['filename'], key)
+    path = 'files/' + filename
+    try:
+        if not os.path.exists(os.path.dirname(path)):
+            try:
+                os.makedirs(os.path.dirname(path))
+            except OSError as exc:
+                if exc.errno != errno.EEXIST:
+                    raise
+        f = open(path, 'w')
+        f.write(body)
+        return "file written"
+    except IOError:
+        return"Error writing file"
 
 
 @app.route('/get', methods=['POST'])
 def get_entry():
     return "get pls"
+
+
+#  C.decrypt(request.form['file'], key),
