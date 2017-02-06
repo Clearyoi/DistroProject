@@ -159,12 +159,11 @@ def lock():
     if row is None:
         return 'File does not exist or you do not have permission to lock it'
     elif row["lock"] is None:
-        body = row["body"]
         version = row["version"]
         fileLevel = row["level"]
         db.execute('delete from files where filename = ?', [filename])
-        db.execute('insert into files (filename, body, version, lock, lockLevel, level) values (?, ?, ?, ?, ?, ?)',
-                   [filename, body, version, name, level, fileLevel])
+        db.execute('insert into files (filename, version, lock, lockLevel, level) values (?, ?, ?, ?, ?)',
+                   [filename, version, name, level, fileLevel])
         db.commit()
         return "File locked"
     else:
@@ -186,12 +185,11 @@ def unlock():
     elif row["lock"] is None:
         return "File is not locked"
     elif row["lock"] == name:
-        body = row["body"]
         version = row["version"]
         fileLevel = row["level"]
         db.execute('delete from files where filename = ?', [filename])
-        db.execute('insert into files (filename, body, version, level) values (?, ?, ?, ?)',
-                   [filename, body, version, fileLevel])
+        db.execute('insert into files (filename, version, level) values (?, ?, ?)',
+                   [filename, version, fileLevel])
         db.commit()
         return "File unlocked"
     elif row["lockLevel"] > level:
@@ -199,8 +197,8 @@ def unlock():
         version = row["version"]
         fileLevel = row["level"]
         db.execute('delete from files where filename = ?', [filename])
-        db.execute('insert into files (filename, body, version, level) values (?, ?, ?, ?)',
-                   [filename, body, version, fileLevel])
+        db.execute('insert into files (filename, version, level) values (?, ?, ?)',
+                   [filename, version, fileLevel])
         db.commit()
         return "File unlocked"
     else:

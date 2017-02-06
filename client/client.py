@@ -50,7 +50,6 @@ class Client(object):
                 if r.text == "You don't have permission to overwrite this file" or r.text.startswith("This file is locked by "):
                     print r.text
                 else:
-                    print r.text
                     info = json.loads(r.text)
                     print info["text"]
                     self.cache[filename] = info["version"]
