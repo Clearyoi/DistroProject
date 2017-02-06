@@ -112,7 +112,7 @@ def add_entry():
                     db.execute('insert into files (filename, version, lock, lockLevel, level) values (?, ?, ?, ?, ?)',
                                [filename, version, lock, lockLevel, fileLevel])
                     db.commit()
-                    return json.dumps({"text": "File overwritten", "version": version,
+                    return json.dumps({"text": "Overwriting file", "version": version,
                                       "fileServerAdr": 'http://localhost:5000/'}, ensure_ascii=True)
             else:
                 version = row["version"] + 1
@@ -120,13 +120,13 @@ def add_entry():
                 db.execute('insert into files (filename, version, level) values (?, ?, ?)',
                            [filename, version, fileLevel])
                 db.commit()
-                return json.dumps({"text": "File overwritten", "version": version,
+                return json.dumps({"text": "Overwriting file", "version": version,
                                   "fileServerAdr": 'http://localhost:5000/'}, ensure_ascii=True)
         else:
             db.execute('insert into files (filename, version, level) values (?, ?, ?)',
                        [filename, version, fileLevel])
             db.commit()
-            return json.dumps({"text": "File added", "version": version,
+            return json.dumps({"text": "Adding file", "version": version,
                                "fileServerAdr": 'http://localhost:5000/'}, ensure_ascii=True)
 
 
@@ -143,7 +143,7 @@ def get_entry():
     elif int(row["version"]) == int(C.decrypt(request.form['curVersion'], key)):
         return "Copy up to date"
     else:
-        return json.dumps({"body": row["body"], "version": row["version"]}, ensure_ascii=True)
+        return json.dumps({"fileServerAdr": 'http://localhost:5000/', "version": row["version"]}, ensure_ascii=True)
 
 
 @app.route('/lock', methods=['POST'])
@@ -193,7 +193,6 @@ def unlock():
         db.commit()
         return "File unlocked"
     elif row["lockLevel"] > level:
-        body = row["body"]
         version = row["version"]
         fileLevel = row["level"]
         db.execute('delete from files where filename = ?', [filename])

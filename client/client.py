@@ -47,16 +47,16 @@ class Client(object):
                 r = requests.post((directoryServerUrl + 'add'), data={'token': self.token,
                                   'filename': C.encrypt(filename, self.key),
                                   'fileLevel': C.encrypt(args[2], self.key)})
-                if r.text == "You don't have permission to overwrite this file" or r.text.startswith("This file is locked by "):
-                    print r.text
-                else:
+                try:
                     info = json.loads(r.text)
                     print info["text"]
                     self.cache[filename] = info["version"]
                     fileServerUrl = info["fileServerAdr"]
-                    r2 = requests.post((fileServerUrl + 'add'), data={'token': self.token, 'filename': C.encrypt(filename, self.key),
-                                       'file': C.encrypt(f.read(), self.key)})
-                    print r2.text
+                    r = requests.post((fileServerUrl + 'add'), data={'token': self.token, 'filename': C.encrypt(filename, self.key),
+                                      'file': C.encrypt(f.read(), self.key)})
+                    print r.text
+                except ValueError:
+                    print r.text  # This is sloppy as its not a real exceptional state. I should just use a json for everything
             except IOError:
                 print "File not found"
 
@@ -84,15 +84,21 @@ class Client(object):
                 version = self.cache[filename]
             r = requests.post((directoryServerUrl + 'get'), data={'token': self.token, 'filename': C.encrypt(args[1], self.key),
                               'curVersion': C.encrypt(str(version), self.key)})
-            if r.text == 'File does not exist or you do not have permission to view it' or r.text == 'Copy up to date':
-                print r.text
-            else:
+            try:
                 info = json.loads(r.text)
-                path = 'files/' + filename
-                f = open(path, 'w')
-                f.write(info["body"])
                 self.cache[filename] = info["version"]
-                print 'file downloaded'
+                print 'Connected to file server'
+                fileServerUrl = info["fileServerAdr"]
+                r = requests.post((fileServerUrl + 'get'), data={'token': self.token, 'filename': C.encrypt(args[1], self.key)})
+                path = 'files/' + filename
+                try:
+                    f = open(path, 'w')
+                    f.write(r.text)
+                    print 'File downloaded'
+                except IOError:
+                    print "Unable to write file"
+            except ValueError:
+                print r.text  # Again not really exceptional.
 
     def lock(self, args):
         if len(args) != 2:

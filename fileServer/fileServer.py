@@ -9,7 +9,6 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
 app = Flask(__name__)
 knownServerKey = 12
 
-# Load default config and override config from an environment variable
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'fileServer.db'),
     DEBUG=True,
@@ -48,14 +47,17 @@ def add_entry():
                     raise
         f = open(path, 'w')
         f.write(body)
-        return "file written"
+        return "File written"
     except IOError:
         return"Error writing file"
 
 
 @app.route('/get', methods=['POST'])
 def get_entry():
-    return "get pls"
-
-
-#  C.decrypt(request.form['file'], key),
+    key = getKey(request.form['token'])
+    path = C.decrypt(request.form['filename'], key)
+    try:
+        f = open(path)
+        return C.encrypt(f.read(), self.key)
+    except IOError:
+        return "File not found"
