@@ -12,9 +12,7 @@ knownServerKey = 12
 app.config.update(dict(
     DATABASE=os.path.join(app.root_path, 'directoryServer.db'),
     DEBUG=True,
-    SECRET_KEY='ServerKEY',
-    USERNAME='admin',
-    PASSWORD='default'
+    SECRET_KEY='ServerKEY'
 ))
 app.config.from_envvar('FLASKR_SETTINGS', silent=True)
 
