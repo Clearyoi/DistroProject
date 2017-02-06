@@ -103,7 +103,6 @@ def addUser():
     cur = db.execute('select username from users where username = ?', [request.form['username']])
     row = cur.fetchone()
     if row is None:
-        print request.form['level'] + request.form['username'] + request.form['password']
         db.execute('insert into users (username, password, level) values (?, ?, ?)',
                    [request.form['username'], request.form['password'], request.form['level']])
         db.commit()
