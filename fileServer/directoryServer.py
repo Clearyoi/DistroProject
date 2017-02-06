@@ -10,7 +10,7 @@ knownServerKey = 12
 
 # Load default config and override config from an environment variable
 app.config.update(dict(
-    DATABASE=os.path.join(app.root_path, 'fileServer.db'),
+    DATABASE=os.path.join(app.root_path, 'directoryServer.db'),
     DEBUG=True,
     SECRET_KEY='ServerKEY',
     USERNAME='admin',
